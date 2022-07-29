@@ -1,0 +1,137 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<title>Quiz</title>
+		<style>
+			body {
+				background-color:lightblue;
+			}
+		
+			#quiz {
+				border:2px solid black;
+				border-radius:10px;
+				text-align:center;
+				background-color:beige;
+			}
+			
+			#prev {
+				visibility:hidden;
+			}
+			
+			#begin {
+				visibility:hidden;
+				width:600px;
+				text-align:center;
+				margin:auto
+			}
+		</style>
+		<script type="text/javascript">
+			var reader; //GLOBAL File Reader object for demo purpose only
+			let questions;
+			/**
+			 * Check for the various File API support.
+			 */
+			function checkFileAPI() {
+				if (window.File && window.FileReader && window.FileList && window.Blob) {
+					reader = new FileReader();
+					return true; 
+				} else {
+					alert('The File APIs are not fully supported by your browser. Fallback required.');
+					return false;
+				}
+			}
+
+			/**
+			 * read text input
+			 */
+			function readText(filePath) {
+				var output = ""; //placeholder for text output
+				if(filePath.files && filePath.files[0]) {           
+					reader.onload = function (e) {
+						output = e.target.result;
+						questions = output.split("\n");
+						document.getElementById("file").style.visibility = "collapse";
+						document.getElementById("begin").style.visibility = "visible";
+						questionBuilder(questions);
+					};//end onload()
+					reader.readAsText(filePath.files[0]);
+				}//end if html5 filelist support
+				else if(ActiveXObject && filePath) { //fallback to IE 6-8 support via ActiveX
+					try {
+						reader = new ActiveXObject("Scripting.FileSystemObject");
+						var file = reader.OpenTextFile(filePath, 1); //ActiveX File Object
+						output = file.ReadAll(); //text contents of file
+						file.Close(); //close file "input stream"
+						questions = output.split("\n");
+						questionBuilder(questions);
+					} catch (e) {
+						if (e.number == -2146827859) {
+							alert('Unable to access local files due to browser security settings. ' + 
+							 'To overcome this, go to Tools->Internet Options->Security->Custom Level. ' + 
+							 'Find the setting for "Initialize and script ActiveX controls not marked as safe" and change it to "Enable" or "Prompt"'); 
+						}
+					}       
+				}
+				else { //this is where you could fallback to Java Applet, Flash or similar
+					return false;
+				}       
+				return true;
+			}
+			
+			let q = [];
+			function questionBuilder(questions) {
+				let pos = 0;
+				while (pos < questions.length) {
+					let build = "";
+					while (!questions[pos].startsWith("http")) {
+						build += "<p>" + questions[pos] + "</p></br>"
+						pos++;
+					}
+					while (questions[pos].startsWith("http")) {
+						build += "<img src='" + questions[pos] + "' alt='image'></br>";
+						pos++;
+					}
+					pos++;
+					q.push(build);
+				}
+			}
+			
+			let index = -1;
+			function nextQ () {
+				if (index == q.length-1) {
+					document.getElementById("quiz").innerHTML = "<p>You have reached the end of the quiz</p>";
+					index++;
+					document.getElementById("next").style.visibility = "hidden";
+				} else {
+					document.getElementById("quiz").innerHTML = q[++index];
+					document.getElementById("prev").style.visibility = "visible";
+				}
+			}
+			
+			function prevQ() {
+				if (index == 0) {
+					document.getElementById("quiz").innerHTML = "<p> Press next to begin the quiz on American history </p>";
+					index--;
+					document.getElementById("prev").style.visibility = "hidden";
+				} else {
+					document.getElementById("quiz").innerHTML = q[--index];
+					document.getElementById("next").style.visibility = "visible";
+				}
+			}
+		</script>
+	</head>
+	<body onload="checkFileAPI()">
+		<div id = "file">
+			<p> Choose the quiz file </p>
+			<input type="file" id="start" onchange="readText(this)"></input>
+		</div>
+		
+		<div id="begin">
+			<div id="quiz">
+				<p> Press next to begin the quiz on American history </p>
+			</div>
+			<button id="prev" onclick="prevQ()">Prev</button>
+			<button id="next" onclick="nextQ()">Next</button>
+		</div>
+	</body>
+</html>
